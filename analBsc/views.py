@@ -16,8 +16,8 @@ def stampToTime(timestamp: str):
 
 
 def BoughtSoldGraph(bought, sold, ylabel):
+    matplotlib.use('Agg')
     plt.figure(figsize=(20, 10))
-    plt.switch_backend('AGG')
     buf = io.BytesIO()
     dfBought = pd.DataFrame.from_dict(bought, orient='columns').groupby('timeStamp').sum()
     dfSold = pd.DataFrame.from_dict(sold, orient='columns').groupby('timeStamp').sum()
@@ -37,8 +37,16 @@ def GruopByPerson(data, PersonColumn: str):
         .from_dict(data, orient='columns') \
         .groupby(PersonColumn) \
         .sum() \
-        .sort_values("value") \
+        .sort_values("value", ascending=False) \
         .to_dict('index')
+
+
+def joinDf(data1, data2):
+    # Страемся Группировать, но как-то нихуя не получается, но мы пробьеюмся(нет)
+    df1 = pd.DataFrame.from_dict(data1, orient='columns').set_index('person').groupby('person').sum()
+    df2 = pd.DataFrame.from_dict(data2, orient='columns').set_index('person').groupby('person').sum()
+
+    print(df1.join(df2, on='person', how='outer', lsuffix='_left', rsuffix='_right').to_dict())
 
 
 def SoldGraph(sold):
@@ -84,14 +92,23 @@ def index(request):
         transaction["value"] = (int(transaction["value"])) / 10 ** (18)
         if transaction["tokenSymbol"] == "BUSD":
             if transaction["to"] == "0xe7ff9aceb3767b4514d403d1486b5d7f1b787989":
-                bought.append(transaction)
+                bought.append({
+                    "timeStamp": transaction["timeStamp"],
+                    "value": transaction["value"],
+                    "person": transaction["from"]
+                })
                 BusdBought += transaction["value"]
             elif transaction["from"] == "0xe7ff9aceb3767b4514d403d1486b5d7f1b787989":
-                sold.append(transaction)
+                sold.append({
+                    "timeStamp": transaction["timeStamp"],
+                    "value": transaction["value"],
+                    "person": transaction["to"]
+                })
                 BusdSold += transaction["value"]
     # Top buyer and seller
-    dfBoughtPerson = GruopByPerson(bought,'from')
-    dfSoldPerson = GruopByPerson(sold,'to')
+    dfBoughtPerson = GruopByPerson(bought, 'person')
+    dfSoldPerson = GruopByPerson(sold, 'person')
+    joinDf(bought, sold)
 
     RespondStaking = requests.get(
         "https://api.bscscan.com/api"
@@ -113,14 +130,22 @@ def index(request):
         transaction["timeStamp"] = stampToTime(transaction["timeStamp"])
         transaction["value"] = (int(transaction["value"])) / 10 ** (18)
         if transaction["to"] == "0x11340dc94e32310fa07cf9ae4cd8924c3cd483fe":
-            stack.append(transaction)
+            stack.append({
+                "timeStamp": transaction["timeStamp"],
+                "value": transaction["value"],
+                "person": transaction["from"]
+            })
             ToStack += transaction["value"]
         elif transaction["from"] == "0x11340dc94e32310fa07cf9ae4cd8924c3cd483fe":
-            merge.append(transaction)
+            merge.append({
+                "timeStamp": transaction["timeStamp"],
+                "value": transaction["value"],
+                "person": transaction["to"]
+            })
             FromStack += transaction["value"]
 
-    dfStack =  GruopByPerson(stack,'from')
-    dfMerge =  GruopByPerson(merge,'to')
+    dfStack = GruopByPerson(stack, 'person')
+    dfMerge = GruopByPerson(merge, 'person')
 
     return render(request, 'index.html', {
         'BoughtGraph': BoughtSoldGraph(bought, sold, "Кол-во денях в BUSD"),
