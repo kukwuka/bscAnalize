@@ -4,6 +4,7 @@ from datetime import datetime
 import requests
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib
 
 import io
 import base64, urllib
@@ -14,13 +15,16 @@ def stampToTime(timestamp: str):
     return datetime.utcfromtimestamp(tsint).strftime('%Y-%m-%d')
 
 
-def BoughtGraph(bought):
+def BoughtSoldGraph(bought, sold, ylabel):
     plt.figure(figsize=(20, 10))
     plt.switch_backend('AGG')
     buf = io.BytesIO()
     dfBought = pd.DataFrame.from_dict(bought, orient='columns').groupby('timeStamp').sum()
-    dfBought.plot(label="покупка", figsize=(20, 5))
-    # fig = plt.gcf()
+    dfSold = pd.DataFrame.from_dict(sold, orient='columns').groupby('timeStamp').sum()
+    ax = dfBought.plot(figsize=(20, 5))
+    dfSold.plot(ax=ax)
+    plt.ylabel(ylabel)
+    plt.xlabel("Дата")
 
     plt.savefig(buf, format='png')
     buf.seek(0)
@@ -28,14 +32,21 @@ def BoughtGraph(bought):
     return urllib.parse.quote(string)
 
 
+def GruopByPerson(data, PersonColumn: str):
+    return pd.DataFrame \
+        .from_dict(data, orient='columns') \
+        .groupby(PersonColumn) \
+        .sum() \
+        .sort_values("value") \
+        .to_dict('index')
+
+
 def SoldGraph(sold):
     plt.figure(figsize=(20, 10))
-    plt.switch_backend('AGG')
+    matplotlib.use('Agg')
     buf = io.BytesIO()
     dfSold = pd.DataFrame.from_dict(sold, orient='columns').groupby('timeStamp').sum()
     dfSold.plot(figsize=(20, 5), color='green')
-    # fig = plt.gcf()
-
     plt.savefig(buf, format='png')
     buf.seek(0)
     string = base64.b64encode(buf.read())
@@ -54,18 +65,21 @@ def dfGeneratorTodict(dfSoldPerson):
 
 # Create your views here.
 def index(request):
-    respond = requests.get(
-        "https://api.bscscan.com/api?module=account&action=tokentx&address=0xe7ff9aceb3767b4514d403d1486b5d7f1b787989&startblock=0&endblock=25000000&sort=asc&apikey=YourApiKeyToken")
-
-    resJson = respond.json()["result"]
-
+    RespondSwap = requests.get(
+        "https://api.bscscan.com/api?"
+        "module=account"
+        "&action=tokentx"
+        "&address=0xe7ff9aceb3767b4514d403d1486b5d7f1b787989"
+        "&startblock=0"
+        "&endblock=25000000"
+        "&sort=asc"
+        "&apikey=YourApiKeyToken")
+    resJsonSwap = RespondSwap.json()["result"]
     sold = []
     bought = []
-
     BusdSold = 0
     BusdBought = 0
-
-    for transaction in resJson:
+    for transaction in resJsonSwap:
         transaction["timeStamp"] = stampToTime(transaction["timeStamp"])
         transaction["value"] = (int(transaction["value"])) / 10 ** (18)
         if transaction["tokenSymbol"] == "BUSD":
@@ -75,16 +89,47 @@ def index(request):
             elif transaction["from"] == "0xe7ff9aceb3767b4514d403d1486b5d7f1b787989":
                 sold.append(transaction)
                 BusdSold += transaction["value"]
-
     # Top buyer and seller
-    dfBoughtPerson = pd.DataFrame.from_dict(bought, orient='columns').groupby('from').sum().sort_values("value").to_dict('index')
-    dfSoldPerson = pd.DataFrame.from_dict(sold, orient='columns').groupby('to').sum().sort_values("value").to_dict('index')
+    dfBoughtPerson = GruopByPerson(bought,'from')
+    dfSoldPerson = GruopByPerson(sold,'to')
+
+    RespondStaking = requests.get(
+        "https://api.bscscan.com/api"
+        "?module=account&action=tokentx"
+        "&address=0x11340dC94E32310FA07CF9ae4cd8924c3cD483fe"
+        "&startblock=0"
+        "&endblock=25000000"
+        "&sort=asc"
+        "&apikey=YourApiKeyToken")
+
+    resJsonStaking = RespondStaking.json()["result"]
+
+    stack = []
+    merge = []
+    ToStack = 0
+    FromStack = 0
+
+    for transaction in resJsonStaking:
+        transaction["timeStamp"] = stampToTime(transaction["timeStamp"])
+        transaction["value"] = (int(transaction["value"])) / 10 ** (18)
+        if transaction["to"] == "0x11340dc94e32310fa07cf9ae4cd8924c3cd483fe":
+            stack.append(transaction)
+            ToStack += transaction["value"]
+        elif transaction["from"] == "0x11340dc94e32310fa07cf9ae4cd8924c3cd483fe":
+            merge.append(transaction)
+            FromStack += transaction["value"]
+
+    dfStack =  GruopByPerson(stack,'from')
+    dfMerge =  GruopByPerson(merge,'to')
 
     return render(request, 'index.html', {
-        'BoughtGraph': BoughtGraph(bought),
-        'SoldGraph': SoldGraph(sold),
-        'dfBoughtPerson': dfSoldPerson,
-        'dfSoldPerson': dfSoldPerson
+        'BoughtGraph': BoughtSoldGraph(bought, sold, "Кол-во денях в BUSD"),
+        'StackGraph': BoughtSoldGraph(stack, merge, "Кол-во токенов в DFX"),
+        'dfBoughtPerson': dfBoughtPerson,
+        'dfSoldPerson': dfSoldPerson,
+        'dfStack': dfStack,
+        'dfMerge': dfMerge,
+
     })
 
 

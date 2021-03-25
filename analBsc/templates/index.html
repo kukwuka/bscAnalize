@@ -10,10 +10,12 @@
 </head>
 
 <body>
-<h2> график покупок</h2>
+<h2> график покупок и продаж</h2>
+<b>синий купили,оранжевый продали</b>
     <img src="data:image/png;base64,{{ BoughtGraph }}" alt="" >
-<h2> график продаж</h2>
-    <img src="data:image/png;base64,{{ SoldGraph }}" alt="" >
+<h2> график Залили Слили  Stacking</h2>
+<b>синий залили,оранжевый слили</b>
+    <img src="data:image/png;base64,{{ StackGraph }}" alt="" >
 
 <h2> Топ покупок</h2>
         <table border="1" width="50%" cellpadding="5">
@@ -24,7 +26,7 @@
 
                 {% for key, value in dfBoughtPerson.items %}
                     <tr>
-                        <td> {{ key }}: </td> <td> {{ value }} </td>
+                        <td><a href = "https://bscscan.com/address/{{ key }}">{{ key }}</a></td> <td> {{ value }} </td>
                     </tr>
                 {% endfor %}
 
@@ -39,69 +41,42 @@
 
                 {% for key, value in dfSoldPerson.items %}
                     <tr>
-                        <td> {{ key }}: </td> <td> {{ value }} </td>
+                        <td><a href = "https://bscscan.com/address/{{ key }}">{{ key }}</a> </td> <td> {{ value }} </td>
                     </tr>
                 {% endfor %}
 
         </table>
 
-{#    {% get_Novelty as news %}#}
-{#    {% if news %}#}
-{#    <div class="news_title">#}
-{#        <a href="{% url 'news' %}" class="Nevelty_welcome">Новости</a>#}
-{#    </div>#}
-{#    <div class="news">#}
-{#        {% for Novelty in news %}#}
-{#        <div class="Novelty">#}
-{#            <a href="{% url 'news_detail' Novelty.id %}">#}
-{#                <p class="Neveltytitle">#}
-{#                    {{Novelty.title|truncatechars:149 }}#}
-{#                </p>#}
-{#            </a>#}
-{#        </div>#}
-{#        {% endfor %}#}
-{#    </div>#}
-{#    {% endif %}#}
-{#     <div class="services_cards">#}
-{#        <div class="service_card">#}
-{#            <h4>Грозовая активность</h4>#}
-{#            <p>Воспользоваться картой грозовой активности России</p>#}
-{#            <a href="{% url 'groza' %}" class="butt">воспользоваться</a>#}
-{#        </div>#}
-{#        <!--<div class="service_card">#}
-{#            <h4>Грозовое поле</h4>#}
-{#            <p>Автоматический расчет грозового поля</p>#}
-{#            <a href="#" class="butt">Скоро</a>#}
-{#        </div>-->#}
-{#    </div>#}
-{##}
-{#    <footer>#}
-{#        <div class="namemail">#}
-{#            <span>© "ЭЗОП" 2005 г.</span>#}
-{#            <div class="mail"><a href="mailto:ezop@ezop.ru"> ezop@ezop.ru </a></div>#}
-{#        </div>#}
-{#        <div class="urls">#}
-{#            <div class="columnuurl">#}
-{#                <a href="{% url 'home' %}" class="urlelement">Главная</a><br>#}
-{#                <a href="{% url 'news' %}" class="urlelement">Новости</a>#}
-{#            </div>#}
-{#            <div class="columnuurl">#}
-{#                <a href="{% url 'information' %}" class="urlelement">Контакты</a><br>#}
-{#                <a href="{% url 'about' %}" class="urlelement">О компании</a>#}
-{#            </div>#}
-{#            <div class="columnuurl">#}
-{#                <a href="{% url 'vacancies' %}" class="urlelement">Вакансии</a><br>#}
-{#                <a href="{% url 'question_answer' %}" class="urlelement">Вопрос&#8209;ответ</a>#}
-{#            </div>#}
-{#        </div>#}
-{#        <div class="blocknumbers">#}
-{#            <div class="numbers">#}
-{#                <a class="number" href="callto:+7 (495) 727-08-36">+7 (495) 727-08-36</a><br>#}
-{#                <a class="number" href="callto:+7 (495) 604-42-55">+7 (495) 604-42-55</a>#}
-{#            </div>#}
-{#        </div>#}
-{#    </footer>#}
-{#    <script type="text/javascript" src={% static "main/css/menu.js" %}></script>#}
+
+<h2> Топ Кто залил денях на Stacking</h2>
+    <table border="1" width="50%" cellpadding="5">
+            <tr>
+                <th>Адрес</th>
+                <th>Значение (BUSD)</th>
+            </tr>
+
+                {% for key, value in dfStack.items %}
+                    <tr>
+                        <td> <a href = "https://bscscan.com/address/{{ key }}">{{ key }}</a> </td> <td> {{ value }} </td>
+                    </tr>
+                {% endfor %}
+
+        </table>
+
+<h2> Топ Кто слил  денях с Stacking</h2>
+    <table border="1" width="50%" cellpadding="5">
+            <tr>
+                <th>Адрес</th>
+                <th>Значение (BUSD)</th>
+            </tr>
+
+                {% for key, value in dfMerge.items %}
+                    <tr>
+                        <td> <a href = "https://bscscan.com/address/{{ key }}">{{ key }}</a> </td> <td> {{ value }} </td>
+                    </tr>
+                {% endfor %}
+
+        </table>
 </body>
 
 </html>
