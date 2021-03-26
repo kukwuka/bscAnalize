@@ -45,8 +45,47 @@ def joinDf(data1, data2):
     # Страемся Группировать, но как-то нихуя не получается, но мы пробьеюмся(нет)
     df1 = pd.DataFrame.from_dict(data1, orient='columns').set_index('person').groupby('person').sum()
     df2 = pd.DataFrame.from_dict(data2, orient='columns').set_index('person').groupby('person').sum()
+    JoinedDf = df1.join(df2, on='person', how='outer', lsuffix='_buy (BUSD)', rsuffix='_sold (BUSD)')
+    JoinedDf.reset_index(drop=True, inplace=True)
 
-    print(df1.join(df2, on='person', how='outer', lsuffix='_left', rsuffix='_right').to_dict())
+    DfxBalance = []
+    StDfxBalance = []
+    LpDfxBalance = []
+    for i in JoinedDf.to_dict('records'):
+        RespondDfxBalance = requests.get(
+            "https://api.bscscan.com/api?module=account"
+            "&action=tokenbalance"
+            "&contractaddress=0x74b3abb94e9e1ecc25bd77d6872949b4a9b2aacf"
+            f"&address={i['person']}"
+            "&tag=latest&apikey=YourApiKeyToken")
+        resIntDfxBalance = int(RespondDfxBalance.json()["result"])
+        DfxBalance.append(resIntDfxBalance / 10 ** 18)
+
+        RespondStDfxBalance = requests.get(
+            "https://api.bscscan.com/api?module=account"
+            "&action=tokenbalance"
+            "&contractaddress=0x11340dC94E32310FA07CF9ae4cd8924c3cD483fe"
+            f"&address={i['person']}"
+            "&tag=latest&apikey=YourApiKeyToken")
+        resIntStDfxBalance = int(RespondStDfxBalance.json()["result"])
+        StDfxBalance.append(resIntStDfxBalance / 10 ** 18)
+
+        RespondLpDfxBalance = requests.get(
+            "https://api.bscscan.com/api?module=account"
+            "&action=tokenbalance"
+            "&contractaddress=0xe7ff9aceb3767b4514d403d1486b5d7f1b787989"
+            f"&address={i['person']}"
+            "&tag=latest&apikey=YourApiKeyToken")
+        resIntLpDfxBalance = int(RespondLpDfxBalance.json()["result"])
+        LpDfxBalance.append(resIntLpDfxBalance / 10 ** 18)
+        print(i['person'])
+
+    JoinedDf['DfxBalance'] = DfxBalance
+    JoinedDf['StDfxBalance'] = StDfxBalance
+    JoinedDf['LpDfxBalance'] = LpDfxBalance
+
+
+    return JoinedDf.to_html()
 
 
 def SoldGraph(sold):
@@ -108,7 +147,6 @@ def index(request):
     # Top buyer and seller
     dfBoughtPerson = GruopByPerson(bought, 'person')
     dfSoldPerson = GruopByPerson(sold, 'person')
-    joinDf(bought, sold)
 
     RespondStaking = requests.get(
         "https://api.bscscan.com/api"
@@ -148,6 +186,7 @@ def index(request):
     dfMerge = GruopByPerson(merge, 'person')
 
     return render(request, 'index.html', {
+        "Df": joinDf(bought, sold),
         'BoughtGraph': BoughtSoldGraph(bought, sold, "Кол-во денях в BUSD"),
         'StackGraph': BoughtSoldGraph(stack, merge, "Кол-во токенов в DFX"),
         'dfBoughtPerson': dfBoughtPerson,
