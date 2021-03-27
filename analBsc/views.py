@@ -27,13 +27,30 @@ def BoughtSoldGraph(bought, sold, ylabel):
     matplotlib.use('Agg')
     plt.figure(figsize=(20, 10))
     buf = io.BytesIO()
-    dfBought = pd.DataFrame.from_dict(bought, orient='columns').groupby('timeStamp').sum().interpolate(method='linear')
-    dfSold = pd.DataFrame.from_dict(sold, orient='columns').groupby('timeStamp').sum().interpolate(method='linear')
-    ax = dfBought.plot(figsize=(20, 5), grid=True)
-    dfSold.plot(ax=ax, grid=True, )
+    dfBought = pd.DataFrame.from_dict(bought, orient='columns').groupby('timeStamp').sum()
+    dfSold = pd.DataFrame.from_dict(sold, orient='columns').groupby('timeStamp').sum()
+    dates = dfBought.index.values
+    BoughtRow = dfBought['value'].to_numpy()
+    SoldRow = dfSold['value'].to_numpy()
+    if len(BoughtRow)>len(SoldRow):
+        BoughtRow = BoughtRow[0:len(SoldRow)]
+        dates = dates[0:len(SoldRow)]
+    else:
+        SoldRow = SoldRow[0:len(BoughtRow)]
+        dates = dates[0:len(BoughtRow)]
+    Delta = BoughtRow - SoldRow
+    dfDelta = pd.DataFrame(data=Delta, index=dates, columns=["delta"])
+    print(dfDelta)
+    # print(dfSold)
+
+    ax = dfBought.plot(figsize=(20, 5), grid=True,marker='o')
+    ax2= dfSold.plot(ax=ax, grid=True,marker='o' )
+    dfDelta.plot(ax=ax2, grid=True,marker='o' )
     plt.ylabel(ylabel)
     plt.xlabel("Дата")
     plt.savefig(buf, format='png')
+    plt.grid(which='minor', alpha=0.2)
+    plt.grid(which='major', alpha=0.5)
     buf.seek(0)
     string = base64.b64encode(buf.read())
     return urllib.parse.quote(string)
@@ -145,6 +162,9 @@ def index(request):
     resJsonSwap = RespondSwap.json()["result"]
     sold = []
     bought = []
+
+    soldDfx = []
+    boughtDfx = []
     for transaction in resJsonSwap:
         transaction["timeStamp"] = stampToTime(transaction["timeStamp"])
         transaction["value"] = (int(transaction["value"])) / 10 ** (18)
@@ -162,6 +182,21 @@ def index(request):
                     "value": transaction["value"],
                     "person": transaction["to"]
                 })
+        elif transaction["tokenSymbol"] == "DFX":
+            if transaction["to"] == "0xe7ff9aceb3767b4514d403d1486b5d7f1b787989":
+                soldDfx.append({
+                    "timeStamp": transaction["timeStamp"],
+                    "value": transaction["value"],
+                    "person": transaction["from"]
+                })
+
+            elif transaction["from"] == "0xe7ff9aceb3767b4514d403d1486b5d7f1b787989":
+                boughtDfx.append({
+                    "timeStamp": transaction["timeStamp"],
+                    "value": transaction["value"],
+                    "person": transaction["to"]
+                })
+
 
     # Top buyer and seller
     dfBoughtPerson = GruopByPerson(bought, 'person')
@@ -222,24 +257,23 @@ def index(request):
                     "value": transaction["value"],
                     "person": transaction["from"]
                 })
-                print("to")
             elif transaction["from"] == "0x9d943fd36add58c42568ea1459411b291ff7035f":
                 mergeFarming.append({
                     "timeStamp": transaction["timeStamp"],
                     "value": transaction["value"],
                     "person": transaction["to"]
                 })
-                print("from")
 
     dfStack = GruopByPerson(stack, 'person')
     dfMerge = GruopByPerson(merge, 'person')
-    print(stackFarming)
 
     return render(request, 'index.html', {
         "Df": joinDf(bought, sold),
         'FarmingGraph': BoughtSoldGraph(stackFarming, mergeFarming, "Кол-во токенов в Cake-LP"),
         'BoughtGraph': BoughtSoldGraph(bought, sold, "Кол-во денях в BUSD"),
+        'BoughtGraphDfx': BoughtSoldGraph(boughtDfx, soldDfx, "Кол-во токенов в DFX"),
         'StackGraph': BoughtSoldGraph(stack, merge, "Кол-во токенов в DFX"),
+
         'dfBoughtPerson': dfBoughtPerson,
         'dfSoldPerson': dfSoldPerson,
         'dfStack': dfStack,
@@ -249,8 +283,7 @@ def index(request):
 
 
 def home(request):
-    w3 = Web3(Web3.HTTPProvider('https://bsc-dataseed1.binance.org:443'))
-    Contract = w3.eth.contract(address="0x74B3abB94e9e1ECc25Bd77d6872949B4a9B2aACF", abi=abi())
-    check = Contract.functions.balanceOf("0x9d943FD36adD58C42568EA1459411b291FF7035F").call()
-    print(check)
-    return render(request, 'index.html', {'data': check})
+    # w3 = Web3(Web3.HTTPProvider('https://bsc-dataseed1.binance.org:443'))
+    # Contract = w3.eth.contract(address="0x74B3abB94e9e1ECc25Bd77d6872949B4a9B2aACF", abi=abi())
+    # check = Contract.functions.balanceOf("0x9d943FD36adD58C42568EA1459411b291FF7035F").call()
+    return render(request, 'index.html', {'data': "check"})
