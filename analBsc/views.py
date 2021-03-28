@@ -10,11 +10,12 @@ import io
 import base64, urllib
 from web3 import Web3
 
-from .abi import abiDfx, abiStDfx, abiFarming
+from .abi import abiDfx, abiStDfx, abiFarming, abiCakeLp
 
 ST_DFX_ADDRESS = "0x11340dc94e32310fa07cf9ae4cd8924c3cd483fe"
 DFX_ADDRESS = "0x74B3abB94e9e1ECc25Bd77d6872949B4a9B2aACF"
 FARMING_DFX_ADDRESS = "0x9d943FD36adD58C42568EA1459411b291FF7035F"
+CAKE_LP_ADDRESS = "0xE7FF9AcEB3767B4514d403D1486B5D7f1b787989"
 WEI = 10 ** 18
 
 
@@ -23,16 +24,18 @@ def stampToTime(timestamp: str):
     return datetime.utcfromtimestamp(tsint).strftime('%Y-%m-%d')
 
 
-def BoughtSoldGraph(bought, sold, ylabel):
+def boughtSoldGraph(bought, sold, ylabel, nameBought, nameSold):
     matplotlib.use('Agg')
     plt.figure(figsize=(20, 10))
     buf = io.BytesIO()
-    dfBought = pd.DataFrame.from_dict(bought, orient='columns').groupby('timeStamp').sum()
-    dfSold = pd.DataFrame.from_dict(sold, orient='columns').groupby('timeStamp').sum()
+    dfBought = pd.DataFrame.from_dict(bought, orient='columns').groupby('timeStamp').sum().rename(
+        columns={'value': nameBought})
+    dfSold = pd.DataFrame.from_dict(sold, orient='columns').groupby('timeStamp').sum().rename(
+        columns={'value': nameSold})
     dates = dfBought.index.values
-    BoughtRow = dfBought['value'].to_numpy()
-    SoldRow = dfSold['value'].to_numpy()
-    if len(BoughtRow)>len(SoldRow):
+    BoughtRow = dfBought[nameBought].to_numpy()
+    SoldRow = dfSold[nameSold].to_numpy()
+    if len(BoughtRow) > len(SoldRow):
         BoughtRow = BoughtRow[0:len(SoldRow)]
         dates = dates[0:len(SoldRow)]
     else:
@@ -40,12 +43,11 @@ def BoughtSoldGraph(bought, sold, ylabel):
         dates = dates[0:len(BoughtRow)]
     Delta = BoughtRow - SoldRow
     dfDelta = pd.DataFrame(data=Delta, index=dates, columns=["delta"])
-    print(dfDelta)
     # print(dfSold)
 
-    ax = dfBought.plot(figsize=(20, 5), grid=True,marker='o')
-    ax2= dfSold.plot(ax=ax, grid=True,marker='o' )
-    dfDelta.plot(ax=ax2, grid=True,marker='o' )
+    ax = dfBought.plot(figsize=(20, 5), grid=True, marker='o')
+    ax2 = dfSold.plot(ax=ax, grid=True, marker='o')
+    dfDelta.plot(ax=ax2, grid=True, marker='o')
     plt.ylabel(ylabel)
     plt.xlabel("Дата")
     plt.savefig(buf, format='png')
@@ -56,7 +58,7 @@ def BoughtSoldGraph(bought, sold, ylabel):
     return urllib.parse.quote(string)
 
 
-def GruopByPerson(data, PersonColumn: str):
+def gruopByPerson(data, PersonColumn: str):
     return pd.DataFrame \
         .from_dict(data, orient='columns') \
         .groupby(PersonColumn) \
@@ -65,29 +67,43 @@ def GruopByPerson(data, PersonColumn: str):
         .to_dict('index')
 
 
-def joinDf(data1, data2):
+def joinDf(data1, data2, stackData, mergedata):
     # Страемся Группировать, но как-то нихуя не получается, но мы пробьеюмся(нет)
+    pd.set_option('display.float_format', lambda x: '%.5f' % x)
     w3 = Web3(Web3.HTTPProvider('https://bsc-dataseed1.binance.org:443'))
-    df1 = pd.DataFrame.from_dict(data1, orient='columns').set_index('person').groupby('person').sum()
-    df2 = pd.DataFrame.from_dict(data2, orient='columns').set_index('person').groupby('person').sum()
-    JoinedDf = df1.join(df2, on='person', how='outer', lsuffix='_buy (BUSD)', rsuffix='_sold (BUSD)')
+    df1 = pd.DataFrame.from_dict(data1, orient='columns').groupby('person').sum()
+    df2 = pd.DataFrame.from_dict(data2, orient='columns').groupby('person').sum()
+    dfStack = pd.DataFrame.from_dict(stackData, orient='columns').set_index('person').groupby('person').sum()
+    dfmerge = pd.DataFrame.from_dict(mergedata, orient='columns').set_index('person').groupby('person').sum()
+    JoinedDf = df1.join(df2, on='person', how='outer', lsuffix='_buy (DFX)', rsuffix='_sold (DFX)')
+    JoinedDf = JoinedDf.join(dfStack, on='person', how='outer', lsuffix='_ToStack (DFX)', rsuffix='Second')
+    JoinedDf = JoinedDf.join(dfmerge, on='person', how='outer', lsuffix='_FromStack (DFX) ', rsuffix='_FromStack (DFX)')
     JoinedDf.reset_index(drop=True, inplace=True)
+    print(JoinedDf)
 
     ContractDfx = w3.eth.contract(address=DFX_ADDRESS, abi=abiDfx())
     ContractStDfx = w3.eth.contract(address=Web3.toChecksumAddress(ST_DFX_ADDRESS), abi=abiStDfx())
     ContractFarmingDfx = w3.eth.contract(address=Web3.toChecksumAddress(FARMING_DFX_ADDRESS), abi=abiFarming())
+    ContractCekeLpToken = w3.eth.contract(address=Web3.toChecksumAddress(CAKE_LP_ADDRESS), abi=abiCakeLp())
 
     DFX_BALANCE_OF_STDFX_ON_DFX = float(
         ContractDfx.functions.balanceOf(
             Web3.toChecksumAddress(ST_DFX_ADDRESS)
         ).call() / WEI)
+    DFX_BALANCE_OF_CAKE_LP_ON_DFX = float(
+        ContractDfx.functions.balanceOf(
+            Web3.toChecksumAddress(CAKE_LP_ADDRESS)
+        ).call() / WEI)
 
     STDFX_TOTAL_SUPLY = float(ContractStDfx.functions.totalSupply().call() / WEI)
+    CAKE_LP_TOTAL_SUPLY = float(ContractCekeLpToken.functions.totalSupply().call() / WEI)
 
     DfxBalance = []
     StDfxBalance = []
     LpFarmingBalance = []
     UserDfxAmountFromStDFX = []
+    UserDfxAmountFromCakeLP = []
+    SumOfDfxOfUser = []
     j = 0
     for i in JoinedDf.to_dict('records'):
         # if j>5 :
@@ -96,7 +112,8 @@ def joinDf(data1, data2):
         #     StDfxBalance.append(0)
         #     continue
         resIntDfxBalance = ContractDfx.functions.balanceOf(Web3.toChecksumAddress(i['person'])).call()
-        DfxBalance.append(float(resIntDfxBalance / WEI))
+        DfxBalanceUser = float(resIntDfxBalance / WEI)
+        DfxBalance.append(DfxBalanceUser)
 
         resIntStDfxBalance = ContractStDfx.functions.balanceOf(Web3.toChecksumAddress(i['person'])).call()
         StDfxBalanceOfPerson = float(resIntStDfxBalance / WEI)
@@ -104,24 +121,26 @@ def joinDf(data1, data2):
         UserDfxAmountFromStDFX.append(StDfxBalanceOfPerson * DFX_BALANCE_OF_STDFX_ON_DFX / STDFX_TOTAL_SUPLY)
 
         resIntFarmingDfxBalance = ContractFarmingDfx.functions.userInfo(1, Web3.toChecksumAddress(i['person'])).call()
-        LpFarmingBalance.append(float(resIntFarmingDfxBalance[0] / WEI))
+        CakeLpBalanceOfPerson = float(resIntFarmingDfxBalance[0] / WEI)
+        LpFarmingBalance.append(CakeLpBalanceOfPerson)
+        UserDfxAmountFromCakeLP.append(CakeLpBalanceOfPerson * DFX_BALANCE_OF_CAKE_LP_ON_DFX / CAKE_LP_TOTAL_SUPLY)
+
+        SumOfDfxOfUser.append(DfxBalanceUser + StDfxBalanceOfPerson + CakeLpBalanceOfPerson)
         j += 1
         print(j)
-
-        # RespondLpDfxBalance = requests.get(
-        #     "https://api.bscscan.com/api?module=account"
-        #     "&action=tokenbalance"
-        #     "&contractaddress=0xe7ff9aceb3767b4514d403d1486b5d7f1b787989"
-        #     f"&address={i['person']}"
-        #     "&tag=latest&apikey=YourApiKeyToken")
-        # resIntLpDfxBalance = int(RespondLpDfxBalance.json()["result"])
-        # LpDfxBalance.append(resIntLpDfxBalance / 10 ** 18)
 
     JoinedDf['DfxBalance'] = DfxBalance
     JoinedDf['StDfxBalance'] = StDfxBalance
     JoinedDf['LpFarmingBalance'] = LpFarmingBalance
     JoinedDf['UserDfxAmountFromStDFX'] = UserDfxAmountFromStDFX
-    Sorted = JoinedDf.sort_values(by=['DfxBalance', 'StDfxBalance', 'LpFarmingBalance'], ascending=False)
+    JoinedDf['UserDfxAmountFromCakeLP'] = UserDfxAmountFromCakeLP
+    JoinedDf['SumOfDfxOfUser'] = SumOfDfxOfUser
+    Sorted = JoinedDf.sort_values(by=[
+        'SumOfDfxOfUser',
+        'DfxBalance',
+        'StDfxBalance',
+        'LpFarmingBalance'
+    ], ascending=False)
     # JoinedDf['LpDfxBalance'] = LpDfxBalance
 
     return Sorted.to_html()
@@ -197,10 +216,9 @@ def index(request):
                     "person": transaction["to"]
                 })
 
-
     # Top buyer and seller
-    dfBoughtPerson = GruopByPerson(bought, 'person')
-    dfSoldPerson = GruopByPerson(sold, 'person')
+    dfBoughtPerson = gruopByPerson(bought, 'person')
+    dfSoldPerson = gruopByPerson(sold, 'person')
 
     RespondStaking = requests.get(
         "https://api.bscscan.com/api"
@@ -264,15 +282,15 @@ def index(request):
                     "person": transaction["to"]
                 })
 
-    dfStack = GruopByPerson(stack, 'person')
-    dfMerge = GruopByPerson(merge, 'person')
+    dfStack = gruopByPerson(stack, 'person')
+    dfMerge = gruopByPerson(merge, 'person')
 
     return render(request, 'index.html', {
-        "Df": joinDf(bought, sold),
-        'FarmingGraph': BoughtSoldGraph(stackFarming, mergeFarming, "Кол-во токенов в Cake-LP"),
-        'BoughtGraph': BoughtSoldGraph(bought, sold, "Кол-во денях в BUSD"),
-        'BoughtGraphDfx': BoughtSoldGraph(boughtDfx, soldDfx, "Кол-во токенов в DFX"),
-        'StackGraph': BoughtSoldGraph(stack, merge, "Кол-во токенов в DFX"),
+        "Df": joinDf(boughtDfx, soldDfx, stack, merge),
+        'FarmingGraph': boughtSoldGraph(stackFarming, mergeFarming, "Кол-во токенов в Cake-LP", "Залили", "Слили"),
+        'BoughtGraph': boughtSoldGraph(bought, sold, "Кол-во денях в BUSD", "продали", "купили"),
+        'BoughtGraphDfx': boughtSoldGraph(boughtDfx, soldDfx, "Кол-во токенов в DFX", "продали", "купили"),
+        'StackGraph': boughtSoldGraph(stack, merge, "Кол-во токенов в DFX", "Слили", "Залили"),
 
         'dfBoughtPerson': dfBoughtPerson,
         'dfSoldPerson': dfSoldPerson,
