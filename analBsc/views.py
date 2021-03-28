@@ -1,13 +1,13 @@
-from django.shortcuts import render
-
-from datetime import datetime
-import requests
-import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib
-
+import base64
 import io
-import base64, urllib
+import urllib
+from datetime import datetime
+
+import matplotlib
+import matplotlib.pyplot as plt
+import pandas as pd
+import requests
+from django.shortcuts import render
 from web3 import Web3
 
 from .abi import abiDfx, abiStDfx, abiFarming, abiCakeLp
@@ -24,17 +24,17 @@ def stampToTime(timestamp: str):
     return datetime.utcfromtimestamp(tsint).strftime('%Y-%m-%d')
 
 
-def boughtSoldGraph(bought, sold, ylabel, nameBought, nameSold):
+def boughtSoldGraph(bought, sold, ylabel, namebought, namesold):
     matplotlib.use('Agg')
     plt.figure(figsize=(20, 10))
     buf = io.BytesIO()
     dfBought = pd.DataFrame.from_dict(bought, orient='columns').groupby('timeStamp').sum().rename(
-        columns={'value': nameBought})
+        columns={'value': namebought})
     dfSold = pd.DataFrame.from_dict(sold, orient='columns').groupby('timeStamp').sum().rename(
-        columns={'value': nameSold})
+        columns={'value': namesold})
     dates = dfBought.index.values
-    BoughtRow = dfBought[nameBought].to_numpy()
-    SoldRow = dfSold[nameSold].to_numpy()
+    BoughtRow = dfBought[namebought].to_numpy()
+    SoldRow = dfSold[namesold].to_numpy()
     if len(BoughtRow) > len(SoldRow):
         BoughtRow = BoughtRow[0:len(SoldRow)]
         dates = dates[0:len(SoldRow)]
@@ -65,22 +65,22 @@ def boughtSoldGraph(bought, sold, ylabel, nameBought, nameSold):
     return urllib.parse.quote(string)
 
 
-def gruopByPerson(data, PersonColumn: str):
+def gruopByPerson(data, personcolumn: str):
     return pd.DataFrame \
         .from_dict(data, orient='columns') \
-        .groupby(PersonColumn) \
+        .groupby(personcolumn) \
         .sum() \
         .sort_values("value", ascending=False) \
         .to_dict('index')
 
 
-def joinDf(data1, data2, stackData, mergedata):
+def joinDf(data1, data2, stackdata, mergedata):
     # Страемся Группировать, но как-то нихуя не получается, но мы пробьеюмся(нет)
     pd.set_option('display.float_format', lambda x: '%.5f' % x)
     w3 = Web3(Web3.HTTPProvider('https://bsc-dataseed1.binance.org:443'))
     df1 = pd.DataFrame.from_dict(data1, orient='columns').groupby('person').sum()
     df2 = pd.DataFrame.from_dict(data2, orient='columns').groupby('person').sum()
-    dfStack = pd.DataFrame.from_dict(stackData, orient='columns').set_index('person').groupby('person').sum()
+    dfStack = pd.DataFrame.from_dict(stackdata, orient='columns').set_index('person').groupby('person').sum()
     dfmerge = pd.DataFrame.from_dict(mergedata, orient='columns').set_index('person').groupby('person').sum()
     JoinedDf = df1.join(df2, on='person', how='outer', lsuffix='_buy (DFX)', rsuffix='_sold (DFX)')
     JoinedDf = JoinedDf.join(dfStack, on='person', how='outer', lsuffix='_ToStack (DFX)', rsuffix='Second')
@@ -193,7 +193,7 @@ def index(request):
     boughtDfx = []
     for transaction in resJsonSwap:
         transaction["timeStamp"] = stampToTime(transaction["timeStamp"])
-        transaction["value"] = (int(transaction["value"])) / 10 ** (18)
+        transaction["value"] = (int(transaction["value"])) / WEI
         if transaction["tokenSymbol"] == "BUSD":
             if transaction["to"] == "0xe7ff9aceb3767b4514d403d1486b5d7f1b787989":
                 bought.append({
@@ -244,7 +244,7 @@ def index(request):
 
     for transaction in resJsonStaking:
         transaction["timeStamp"] = stampToTime(transaction["timeStamp"])
-        transaction["value"] = (int(transaction["value"])) / 10 ** (18)
+        transaction["value"] = (int(transaction["value"])) / WEI
         if transaction["to"] == "0x11340dc94e32310fa07cf9ae4cd8924c3cd483fe":
             stack.append({
                 "timeStamp": transaction["timeStamp"],
@@ -275,7 +275,7 @@ def index(request):
     for transaction in resJsonFarming:
         if transaction["tokenSymbol"] == "Cake-LP":
             transaction["timeStamp"] = stampToTime(transaction["timeStamp"])
-            transaction["value"] = (int(transaction["value"])) / 10 ** (18)
+            transaction["value"] = (int(transaction["value"])) / WEI
             if transaction["to"] == "0x9d943fd36add58c42568ea1459411b291ff7035f":
                 stackFarming.append({
                     "timeStamp": transaction["timeStamp"],
@@ -306,9 +306,3 @@ def index(request):
 
     })
 
-
-def home(request):
-    # w3 = Web3(Web3.HTTPProvider('https://bsc-dataseed1.binance.org:443'))
-    # Contract = w3.eth.contract(address="0x74B3abB94e9e1ECc25Bd77d6872949B4a9B2aACF", abi=abi())
-    # check = Contract.functions.balanceOf("0x9d943FD36adD58C42568EA1459411b291FF7035F").call()
-    return render(request, 'index.html', {'data': "check"})
