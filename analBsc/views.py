@@ -291,7 +291,7 @@ def index(request):
     dfMerge = gruopByPerson(merge, 'person')
 
     return render(request, 'index.html', {
-        "Df": "joinDf(boughtDfx, soldDfx, stack, merge)",
+        "Df": joinDf(boughtDfx, soldDfx, stack, merge),
         'FarmingGraph': boughtSoldGraph(stackFarming, mergeFarming, "Кол-во токенов в Cake-LP", "Залили", "Слили"),
         'BoughtGraph': boughtSoldGraph(bought, sold, "Кол-во денях в BUSD", "продали", "купили"),
         'BoughtGraphDfx': boughtSoldGraph(boughtDfx, soldDfx, "Кол-во токенов в DFX", "продали", "купили"),
