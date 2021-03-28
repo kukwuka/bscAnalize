@@ -1,6 +1,6 @@
 команды для запуска
 ```bash
-pip instal req.txt
+pip install -r req.txt
 python manage.py makemigrations
 python manage.py migrate
 ```
