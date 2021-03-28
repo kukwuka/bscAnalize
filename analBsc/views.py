@@ -300,6 +300,8 @@ def index(request):
     })
 
 
+
+
 def home(request):
     # w3 = Web3(Web3.HTTPProvider('https://bsc-dataseed1.binance.org:443'))
     # Contract = w3.eth.contract(address="0x74B3abB94e9e1ECc25Bd77d6872949B4a9B2aACF", abi=abi())
