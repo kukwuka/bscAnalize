@@ -50,9 +50,16 @@ def boughtSoldGraph(bought, sold, ylabel, nameBought, nameSold):
     dfDelta.plot(ax=ax2, grid=True, marker='o')
     plt.ylabel(ylabel)
     plt.xlabel("Дата")
+
+    # Show the major grid lines with dark grey lines
+    plt.grid(b=True, which='major', color='#666666', linestyle='-')
+
+    # Show the minor grid lines with very faint and almost transparent grey lines
+    plt.minorticks_on()
+    plt.grid(b=True, which='minor', color='#999999', linestyle='-', alpha=0.2)
+
     plt.savefig(buf, format='png')
-    plt.grid(which='minor', alpha=0.2)
-    plt.grid(which='major', alpha=0.5)
+
     buf.seek(0)
     string = base64.b64encode(buf.read())
     return urllib.parse.quote(string)
