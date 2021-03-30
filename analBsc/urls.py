@@ -3,6 +3,7 @@ from . import views
 from . import legacy
 
 urlpatterns = [
+    path('', views.index_html),
     path('html', legacy.index),
     path('home/', views.AddressInfoView.as_view()),
     path('update/', views.updateCache),

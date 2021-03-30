@@ -2,6 +2,7 @@ from django.db.models.functions import Coalesce
 from django.http import JsonResponse
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.shortcuts import render
 
 from .models import AddressInfo
 from .serializers import AddressInfoSerializer
@@ -53,3 +54,6 @@ class AddressInfoView(APIView):
 
 def total_supply_View(request):
     return JsonResponse({'total_supply': total_supply()}, safe=False)
+
+def index_html(request):
+    return render(request, 'main.html', )
