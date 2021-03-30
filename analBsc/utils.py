@@ -147,4 +147,4 @@ def gruop_by_person(toData, fromData):
     toDataGroped = pd.DataFrame.from_dict(toData, orient='columns').groupby('timeStamp').sum()
     fromDataGroped = pd.DataFrame.from_dict(fromData, orient='columns').groupby('timeStamp').sum()
 
-    return toDataGroped.to_dict(), fromDataGroped.to_dict()
+    return toDataGroped.tail(7).to_dict(), fromDataGroped.tail(7).to_dict()
