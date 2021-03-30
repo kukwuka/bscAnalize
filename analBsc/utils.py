@@ -147,4 +147,14 @@ def gruop_by_person(toData, fromData):
     toDataGroped = pd.DataFrame.from_dict(toData, orient='columns').groupby('timeStamp').sum()
     fromDataGroped = pd.DataFrame.from_dict(fromData, orient='columns').groupby('timeStamp').sum()
 
-    return toDataGroped.tail(7).to_dict(), fromDataGroped.tail(7).to_dict()
+    return toDataGroped.to_dict(), fromDataGroped.to_dict()
+
+
+def total_supply_request():
+    RespondSwap = requests.get(
+        "https://api.bscscan.com/api?"
+        "module=stats&action=tokensupply"
+        "&contractaddress=0x74b3abb94e9e1ecc25bd77d6872949b4a9b2aacf"
+        "&apikey=X7UE235AN5BWK43SPCUPG2DZAQPZ9BPG46"
+    )
+    return RespondSwap.json()["result"]

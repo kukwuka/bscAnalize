@@ -10,5 +10,6 @@ urlpatterns = [
     path('buysoldbusd/', views.buy_sold_graphs_BUSD_View),
     path('stackmergest/', views.stack_merge_graphs_Stacking_View),
     path('stackmergelp/', views.stack_merge_graphs_Farming_View),
+    path('totalsupply/', views.total_supply_View),
 ]
 

@@ -1,6 +1,7 @@
 from .utils import (
     parse_contract_transations,
     group_4data_by_person,
+    total_supply_request,
     gruop_by_person,
     ST_DFX_ADDRESS,
     FARMING_DFX_ADDRESS,
@@ -52,5 +53,12 @@ def stack_merge_graphs_Stacking():
 
 def stack_merge_graphs_Farming():
     merge, stack = parse_contract_transations(FARMING_DFX_ADDRESS, "Cake-LP")
-    mergeLpGrouped, mergeLpGrouped = gruop_by_person(merge, stack)
-    return mergeLpGrouped, mergeLpGrouped
+    mergeLpGrouped, stackLpGrouped = gruop_by_person(merge, stack)
+    return mergeLpGrouped, stackLpGrouped
+
+
+def total_supply():
+     return total_supply_request()
+
+
+

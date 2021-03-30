@@ -10,7 +10,9 @@ from .service import (
     buy_sold_graphs_DFX,
     buy_sold_graphs_BUSD,
     stack_merge_graphs_Stacking,
-    stack_merge_graphs_Farming)
+    stack_merge_graphs_Farming,
+    total_supply,
+)
 
 
 def updateCache(request):
@@ -47,3 +49,7 @@ class AddressInfoView(APIView):
             'value_FromStack').desc())
         serializer = AddressInfoSerializer(adressInfo, many=True)
         return Response(serializer.data)
+
+
+def total_supply_View(request):
+    return JsonResponse({'total_supply': total_supply()}, safe=False)
