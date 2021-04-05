@@ -1,19 +1,11 @@
-from .utils import (
-    parse_contract_transations,
-    group_4data_by_person,
-    total_supply_request,
-    gruop_by_person,
-    ST_DFX_ADDRESS,
-    FARMING_DFX_ADDRESS,
-    CAKE_LP_ADDRESS)
-
 from .models import AddressInfo
+from . import utils
 
 
 def update_Db():
-    soldDfx, boughtDfx = parse_contract_transations(CAKE_LP_ADDRESS, "DFX")
-    stack, merge = parse_contract_transations(ST_DFX_ADDRESS, "")
-    finite_data = group_4data_by_person(soldDfx, boughtDfx, stack, merge)
+    soldDfx, boughtDfx = utils.parse_contract_transations(utils.CAKE_LP_ADDRESS, "DFX")
+    stack, merge = utils.parse_contract_transations(utils.ST_DFX_ADDRESS, "")
+    finite_data = utils.group_4data_by_person(soldDfx, boughtDfx, stack, merge)
     for address in finite_data:
         obj, created = AddressInfo.objects.update_or_create(
             address=address['person'],
@@ -32,33 +24,33 @@ def update_Db():
         )
 
 
-def buy_sold_graphs_DFX():
-    soldDfx, boughtDfx = parse_contract_transations(CAKE_LP_ADDRESS, "DFX")
-    soldDfxGrouped, boughtDfxGrouped = gruop_by_person(soldDfx, boughtDfx)
+def buy_sold_graphs_DFX_hash():
+    soldDfx, boughtDfx = utils.parse_contract_transations(utils.CAKE_LP_ADDRESS, "DFX")
+    soldDfxBusd, boughtDfxBusd = utils.parse_contract_transations(utils.CAKE_LP_ADDRESS, "BUSD")
+    result = utils.group_by_time_with_hash(soldDfx, boughtDfx, soldDfxBusd, boughtDfxBusd)
 
-    return soldDfxGrouped, boughtDfxGrouped
+    return result
 
 
-def buy_sold_graphs_BUSD():
-    soldDfx, boughtDfx = parse_contract_transations(CAKE_LP_ADDRESS, "BUSD")
-    soldDfxGrouped, boughtDfxGrouped = gruop_by_person(soldDfx, boughtDfx)
-    return soldDfxGrouped, boughtDfxGrouped
+def yesterday_buy_sold_delta():
+    table = buy_sold_graphs_DFX_hash()
+
+    return utils.get_yesterday_delta(table)
 
 
 def stack_merge_graphs_Stacking():
-    merge, stack = parse_contract_transations(ST_DFX_ADDRESS, "")
-    mergeDfxGrouped, stackDfxGrouped = gruop_by_person(merge, stack)
-    return mergeDfxGrouped, stackDfxGrouped
+    merge, stack = utils.parse_contract_transations(utils.ST_DFX_ADDRESS, "")
+    result = utils.group_by_time(merge, stack)
+
+    return result
 
 
 def stack_merge_graphs_Farming():
-    merge, stack = parse_contract_transations(FARMING_DFX_ADDRESS, "Cake-LP")
-    mergeLpGrouped, stackLpGrouped = gruop_by_person(merge, stack)
-    return mergeLpGrouped, stackLpGrouped
+    merge, stack = utils.parse_contract_transations(utils.FARMING_DFX_ADDRESS, "Cake-LP")
+    result = utils.group_by_time(merge, stack)
+
+    return result
 
 
 def total_supply():
-     return total_supply_request()
-
-
-
+    return utils.total_supply_request()

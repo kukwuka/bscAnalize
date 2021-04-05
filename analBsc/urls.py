@@ -1,16 +1,17 @@
 from django.urls import path
-from . import views
-from . import legacy
+from . import views, legacy, class_views
 
 urlpatterns = [
     path('', views.index_html),
     path('html', legacy.index),
-    path('home/', views.AddressInfoView.as_view()),
+    path('addresses/', class_views.AddressInfoView.as_view()),
     path('update/', views.updateCache),
-    path('buysolddfx/', views.buy_sold_graphs_DFX_View),
-    path('buysoldbusd/', views.buy_sold_graphs_BUSD_View),
     path('stackmergest/', views.stack_merge_graphs_Stacking_View),
     path('stackmergelp/', views.stack_merge_graphs_Farming_View),
     path('totalsupply/', views.total_supply_View),
+    path('buysold/', views.check_hash),
+    path('yesterday/', views.yesterday_delta),
+    path('tg/', views.send_messages),
+    path('profile/', class_views.ProfileView.as_view()),
+    path('profile/<int:pk>', class_views.ProfileView.as_view())
 ]
-

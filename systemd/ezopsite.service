@@ -1,0 +1,11 @@
+[Unit]
+Description=ezopsite service
+After=network.target
+
+[Service]
+Type=simple
+User=adminos
+ExecStart=/home/adminos/Bsc/venv/bin/gunicorn djangoProject.wsgi:application -c /home/adminos/Bsc/bscAnalize/config/gunicorn.conf.py
+WorkingDirectory=/home/adminos/Bsc/bscAnalize/
+[Install]
+WantedBy=multi-user.target

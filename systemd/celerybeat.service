@@ -1,0 +1,11 @@
+[Unit]
+Description=celerybeat service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/home/adminos/Bsc/venv/bin/celery -A djangoProject.celery:app beat
+WorkingDirectory=/home/adminos/Bsc/bscAnalize/
+[Install]
+WantedBy=multi-user.target

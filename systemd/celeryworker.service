@@ -1,0 +1,12 @@
+[Unit]
+Description=celeryworker service
+After=network.target
+
+[Service]
+Type=simple
+User=adminos
+ExecStart=/home/adminos/Bsc/venv/bin/celery -A djangoProject.celery:app worker -l INFO >> /var/log/analBsc/celeryworker/main.log 2>&1
+WorkingDirectory=/home/adminos/Bsc/bscAnalize/
+
+[Install]
+WantedBy=multi-user.target

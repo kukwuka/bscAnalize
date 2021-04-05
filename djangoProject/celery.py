@@ -17,8 +17,12 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 
 app.conf.beat_schedule = {
-    'Update-db': {
-        'task': 'analBsc.tasks.update_database',
-        'schedule': 15
+    # 'Update-db': {
+    #     'task': 'analBsc.tasks.update_database',
+    #     'schedule': 15
+    # },
+    'Send-message': {
+        'task': 'analBsc.tasks.let_update_schedule',
+        'schedule': 60
     }
 }
