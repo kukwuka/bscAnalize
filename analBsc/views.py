@@ -1,53 +1,62 @@
-import hashlib
-import random
-import string
-
+from django.core.exceptions import ObjectDoesNotExist
 from django.http import JsonResponse
 from django.shortcuts import render
+from rest_framework.decorators import permission_classes
+from rest_framework.permissions import IsAuthenticated
 
-from .service import (
-    update_Db,
-    yesterday_buy_sold_delta,
-    buy_sold_graphs_DFX_hash,
-    stack_merge_graphs_Stacking,
-    stack_merge_graphs_Farming,
-    total_supply,
-)
+from . import service, utils
+from .models import Profile
 
 
+@permission_classes((IsAuthenticated,))
 def updateCache(request):
-    update_Db()
+    service.update_Db()
     return JsonResponse({"status": "updated"})
 
 
+@permission_classes((IsAuthenticated,))
 def check_hash(request):
-    result = buy_sold_graphs_DFX_hash()
+    result = service.buy_sold_graphs_DFX_hash()
     return JsonResponse(result, safe=False)
 
 
+@permission_classes((IsAuthenticated,))
 def yesterday_delta(request):
-    return JsonResponse({'yesterday_buy_sell_delta_DFX': yesterday_buy_sold_delta()}, safe=False)
+    return JsonResponse({'yesterday_buy_sell_delta_DFX': service.yesterday_buy_sold_delta()}, safe=False)
 
 
+@permission_classes((IsAuthenticated,))
 def stack_merge_graphs_Stacking_View(request):
-    return JsonResponse({'stack_merge_StDfx': stack_merge_graphs_Stacking()}, safe=False)
+    return JsonResponse({'stack_merge_StDfx': service.stack_merge_graphs_Stacking()}, safe=False)
 
 
+@permission_classes((IsAuthenticated,))
 def stack_merge_graphs_Farming_View(request):
-    return JsonResponse({'stack_merge_CakeLp': stack_merge_graphs_Farming()}, safe=False)
+    return JsonResponse({'stack_merge_CakeLp': service.stack_merge_graphs_Farming()}, safe=False)
 
 
+@permission_classes((IsAuthenticated,))
 def total_supply_View(request):
-    return JsonResponse({'total_supply': total_supply()}, safe=False)
+    return JsonResponse({'total_supply': service.total_supply()}, safe=False)
 
 
+@permission_classes((IsAuthenticated,))
 def index_html(request):
     return render(request, 'main.html')
 
 
-def send_messages(request):
-    pool = string.ascii_letters + string.digits
-    random_string = (''.join(random.choice(pool) for _ in range(256))).encode('utf-8')
-    hash_object = hashlib.sha256(random_string)
-    hex_dig = hash_object.hexdigest()
-    return JsonResponse({'total_supply': hex_dig}, safe=False)
+def profile_dfx_transactions(request, pk):
+    try:
+        profile = Profile.objects.get(id=pk)
+
+    except ObjectDoesNotExist:
+        return JsonResponse({'err': 'profile doesnt exist'}, status=400)
+
+    sold, buy = service.buy_sold_by_person_DFX_hash(profile.blockchain_address)
+
+    return JsonResponse({'sold': sold, 'buy': buy}, safe=False)
+
+
+def test(request):
+    utils.ping_address("0x66c47804e2eb462f27c6ef1dfab50753fb8e05d3")
+    return JsonResponse({'sold': "sold", 'buy': "buy"}, safe=False)

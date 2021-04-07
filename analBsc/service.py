@@ -24,12 +24,29 @@ def update_Db():
         )
 
 
+def sort_data_for_buy_sold():
+    sold_Dfx, bought_Dfx = utils.parse_contract_transations(utils.CAKE_LP_ADDRESS, "DFX")
+    sold_Dfx_Busd, bought_Dfx_Busd = utils.parse_contract_transations(utils.CAKE_LP_ADDRESS, "BUSD")
+    return utils.clean_buy_sold_with_unique_hash(
+        sold_Dfx,
+        bought_Dfx,
+        sold_Dfx_Busd,
+        bought_Dfx_Busd)
+
+
 def buy_sold_graphs_DFX_hash():
-    soldDfx, boughtDfx = utils.parse_contract_transations(utils.CAKE_LP_ADDRESS, "DFX")
-    soldDfxBusd, boughtDfxBusd = utils.parse_contract_transations(utils.CAKE_LP_ADDRESS, "BUSD")
-    result = utils.group_by_time_with_hash(soldDfx, boughtDfx, soldDfxBusd, boughtDfxBusd)
+    cleaned_Dfx_sold, cleaned_Dfx_bought = sort_data_for_buy_sold()
+    result = utils.group_by_time_with_hash(cleaned_Dfx_sold, cleaned_Dfx_bought)
 
     return result
+
+
+def buy_sold_by_person_DFX_hash(address):
+    cleaned_Dfx_sold, cleaned_Dfx_bought = sort_data_for_buy_sold()
+    cleaned_Dfx_sold_for_person = utils.get_user_transactions_from_data(cleaned_Dfx_sold, "personDFX", address)
+    cleaned_Dfx_bought_for_person = utils.get_user_transactions_from_data(cleaned_Dfx_bought, "personDFX", address)
+
+    return cleaned_Dfx_sold_for_person.to_dict('index'), cleaned_Dfx_bought_for_person.to_dict('index')
 
 
 def yesterday_buy_sold_delta():

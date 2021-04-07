@@ -121,7 +121,6 @@ def group_4data_by_person(data1, data2, stackdata, mergedata):
     SumOfDfxOfUser = []
     print('start get add info')
     for i in JoinedDf.to_dict('records'):
-        print(type(i['person']))
         DfxBalanceUser = get_res_Int_user_Balance_Of_Token__Balance(ContractDfx, i['person'])
         DfxBalance.append(DfxBalanceUser)
 
@@ -144,7 +143,6 @@ def group_4data_by_person(data1, data2, stackdata, mergedata):
     return JoinedDf.fillna(0).to_dict('records')
 
 
-
 def balance_of_persons(persons_query_set: QuerySet):
     w3 = Web3(Web3.HTTPProvider('https://bsc-dataseed1.binance.org:443'))
     ContractDfx = w3.eth.contract(address=Web3.toChecksumAddress(DFX_ADDRESS), abi=abiDfx())
@@ -164,9 +162,7 @@ def balance_of_persons(persons_query_set: QuerySet):
 
     SumOfDfxOfUser = []
     result = {}
-    j = 0
     for i in persons_query_set:
-        print(type(i.blockchain_address))
         DfxBalanceUser = get_res_Int_user_Balance_Of_Token__Balance(ContractDfx, i.blockchain_address)
 
         StDfxBalanceOfPerson = get_res_Int_user_Balance_Of_Token__Balance(ContractStDfx, i.blockchain_address)
@@ -176,8 +172,6 @@ def balance_of_persons(persons_query_set: QuerySet):
         UserDfxAmountFromCakeLP = CakeLpBalanceOfPerson * DFX_BALANCE_OF_CAKE_LP_ON_DFX / CAKE_LP_TOTAL_SUPLY
 
         SumOfDfxOfUser.append(DfxBalanceUser + UserDfxAmountFromStDFX + UserDfxAmountFromCakeLP)
-        j += 1
-        print(j)
 
     sumOfBalance = sum(SumOfDfxOfUser)
     for i in range(len(persons_query_set)):
@@ -203,7 +197,6 @@ def user_Dfx_balance(address: str):
     STDFX_TOTAL_SUPLY = float(ContractStDfx.functions.totalSupply().call() / WEI)
     CAKE_LP_TOTAL_SUPLY = float(ContractCekeLpToken.functions.totalSupply().call() / WEI)
 
-    print(type(address))
     resIntDfxBalance = ContractDfx.functions.balanceOf(Web3.toChecksumAddress(address)).call()
     DfxBalanceUser = float(resIntDfxBalance / WEI)
 
@@ -232,7 +225,18 @@ def group_by_time(to_data, from_data):
     return joinedDf
 
 
-def group_by_time_with_hash(to_data_dfx, from_data_dfx, to_data_busd, from_data_busd):
+def group_by_time_with_hash(joined_dfx_sell, joined_dfx_bought):
+    Result = joined_dfx_sell.groupby("timeStampDFX").sum().join(
+        joined_dfx_bought.groupby("timeStampDFX").sum(),
+        how='outer',
+        lsuffix='Sell',
+        rsuffix='Buy'
+    ).fillna(0)
+
+    return Result.to_dict('index')
+
+
+def clean_buy_sold_with_unique_hash(to_data_dfx, from_data_dfx, to_data_busd, from_data_busd):
     toDataGropedDfx = pd.DataFrame.from_dict(to_data_dfx, orient='columns').set_index('hash')
     fromDataGropedDfx = pd.DataFrame.from_dict(from_data_dfx, orient='columns').set_index('hash')
     toDataGropedBusd = pd.DataFrame.from_dict(to_data_busd, orient='columns').set_index('hash')
@@ -243,23 +247,20 @@ def group_by_time_with_hash(to_data_dfx, from_data_dfx, to_data_busd, from_data_
         on='hash',
         how='inner',
         lsuffix='DFX',
-        rsuffix='Busd').groupby("timeStampDFX").sum()
-
+        rsuffix='Busd')
     JoinedDfBought = fromDataGropedDfx.join(
         toDataGropedBusd,
         on='hash',
         how='inner',
         lsuffix='DFX',
-        rsuffix='Busd').groupby("timeStampDFX").sum()
+        rsuffix='Busd')
 
-    Result = JoinedDfSell.join(
-        JoinedDfBought,
-        how='outer',
-        lsuffix='Sell',
-        rsuffix='Buy'
-    ).fillna(0)
+    return JoinedDfSell, JoinedDfBought
 
-    return Result.to_dict('index')
+
+def get_user_transactions_from_data(dataframe, column_name: str, address: str):
+    result = dataframe.query(f"personBusd == '{address}' | personDFX == '{address}' ")
+    return result
 
 
 def total_supply_request():
@@ -275,7 +276,11 @@ def total_supply_request():
 def get_yesterday_delta(table):
     yesterday_time = (datetime.now() - timedelta(1)).strftime('%Y-%m-%d')
     yesterday_data = table[yesterday_time]
-    print(yesterday_data)
-    print(yesterday_time)
     result = yesterday_data["valueDFXBuy"] - yesterday_data["valueDFXSell"]
     return result
+
+
+def ping_address(address):
+    w3 = Web3(Web3.HTTPProvider('https://bsc-dataseed1.binance.org:443'))
+    ContractDfx = w3.eth.contract(address=Web3.toChecksumAddress(DFX_ADDRESS), abi=abiDfx())
+    ContractDfx.functions.balanceOf(Web3.toChecksumAddress(address)).call()

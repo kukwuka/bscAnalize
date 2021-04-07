@@ -47,7 +47,7 @@ def echo(update: Update, _: CallbackContext) -> None:
             profile_authorize = Profile.objects.get(password=password)
             profile_authorize.authorize(username, chat_id)
             update.message.reply_text(
-                'Вы авторизовались, выберите команду',
+                'Вы авторизовались, ждите сигнала',
                 reply_markup=ForceReply(selective=True),
             )
         except ObjectDoesNotExist:
@@ -113,6 +113,7 @@ class Command(BaseCommand):
         dispatcher.add_handler(CommandHandler("help", help_command))
         dispatcher.add_handler(CommandHandler("info", info_comand))
         dispatcher.add_handler(CommandHandler("balance", balance_of_user))
+
 
         # on non command i.e message - echo the message on Telegram
         dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, echo))

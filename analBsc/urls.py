@@ -11,7 +11,8 @@ urlpatterns = [
     path('totalsupply/', views.total_supply_View),
     path('buysold/', views.check_hash),
     path('yesterday/', views.yesterday_delta),
-    path('tg/', views.send_messages),
     path('profile/', class_views.ProfileView.as_view()),
-    path('profile/<int:pk>', class_views.ProfileView.as_view())
+    path('profile/<int:pk>', class_views.ProfileView.as_view()),
+    path('transactions/<int:pk>', views.profile_dfx_transactions),
+    path('test/', views.test)
 ]

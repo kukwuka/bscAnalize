@@ -1,7 +1,7 @@
 from django.db import models
-import random
-import string
-import hashlib
+from django.contrib.auth.models import User
+
+from . import validations
 
 
 class AddressInfo(models.Model):
@@ -29,6 +29,7 @@ class Profile(models.Model):
         unique=True,
         max_length=200,
         blank=False,
+        validators=[validations.validate_binance_blockchain_address]
     )
     user_name = models.TextField(
         verbose_name='Имя пользователя',
@@ -47,10 +48,9 @@ class Profile(models.Model):
         verbose_name='Пароль использован',
         default=False
     )
-    sum_to_sell = models.PositiveIntegerField(
-        verbose_name='Разрешенный лимит на продажу за отрезок времени',
-        blank=True,
-        null=True
+    coefficient = models.FloatField(
+        verbose_name='Коэфициент пользователя',
+        default= 1
     )
     start_selling = models.DateTimeField(
         verbose_name='Время начала продажи для клиента',
@@ -71,3 +71,18 @@ class Profile(models.Model):
         self.password_used = True
         self.external_id = chat_id
         self.save()
+
+
+class Admin(models.Model):
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        null=True)
+    external_id = models.PositiveIntegerField(
+        verbose_name='ID пользователя',
+        default=0
+    )
+    user_name = models.CharField(
+        unique=True,
+        max_length=200,
+    )
