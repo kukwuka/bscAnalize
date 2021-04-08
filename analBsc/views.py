@@ -1,13 +1,16 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import JsonResponse
 from django.shortcuts import render
-from rest_framework.decorators import permission_classes
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import permission_classes, api_view
+from rest_framework.response import Response
 
 from . import service
-from .models import Profile
+from . import serializers
+from .models import Profile, Admin
 
 
+@api_view(['GET', ])
 @permission_classes((IsAuthenticated,))
 def updateCache(request):
     service.update_Db()
@@ -57,3 +60,34 @@ def profile_dfx_transactions(request, pk):
     balance = service.get_user_balance(profile.blockchain_address)
 
     return JsonResponse({'sold': sold, 'buy': buy, 'balance': balance}, safe=False)
+
+
+@api_view(['GET', ])
+@permission_classes((IsAuthenticated,))
+def admin_info(request):
+    user = request.user
+    serializer = serializers.UserDetailSerializer(user)
+    return Response(serializer.data)
+
+
+@api_view(['GET', ])
+@permission_classes((IsAuthenticated,))
+def admin_info(request):
+    user = request.user
+    serializer = serializers.UserDetailSerializer(user)
+    return Response(serializer.data)
+
+
+@api_view(['POST', ])
+@permission_classes((IsAuthenticated,))
+def change_tg_user_name(request):
+    try:
+        new_tg_username = request.data['new_tg_username']
+    except KeyError:
+        return Response(status=400)
+
+    admin = Admin.objects.get_or_create(user=request.user)[0]
+    # print(admin)
+    admin.user_name = new_tg_username
+    admin.save()
+    return Response(status=200)

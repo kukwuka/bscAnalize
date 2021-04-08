@@ -9,11 +9,11 @@ from .models import Profile
 from .serializers import ProfileListSerializer, AddressInfoSerializer
 
 
-class ProfileView(APIView):
-
+class ProfileListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
+
         profile_list = Profile.objects.all()
         serializer = ProfileListSerializer(profile_list, many=True)
         # print(serializer.data)
@@ -26,6 +26,20 @@ class ProfileView(APIView):
             return Response(status=201)
         else:
             return Response(status=400)
+
+
+class ProfileDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            profile_query = Profile.objects.get(id=pk)
+        except ObjectDoesNotExist:
+            return Response(data={'err': f'Cant find profile with this id :{pk}'}, status=400)
+
+        serializer = ProfileListSerializer(profile_query)
+        # print(serializer.data)
+        return Response(serializer.data)
 
     def put(self, request, pk):
         try:
