@@ -14,5 +14,4 @@ urlpatterns = [
     path('profile/', class_views.ProfileView.as_view()),
     path('profile/<int:pk>', class_views.ProfileView.as_view()),
     path('transactions/<int:pk>', views.profile_dfx_transactions),
-    path('test/', views.test)
 ]

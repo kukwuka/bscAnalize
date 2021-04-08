@@ -113,32 +113,34 @@ def group_4data_by_person(data1, data2, stackdata, mergedata):
     STDFX_TOTAL_SUPLY = float(ContractStDfx.functions.totalSupply().call() / WEI)
     CAKE_LP_TOTAL_SUPLY = float(ContractCekeLpToken.functions.totalSupply().call() / WEI)
 
-    DfxBalance = []
-    StDfxBalance = []
-    LpFarmingBalance = []
-    UserDfxAmountFromStDFX = []
-    UserDfxAmountFromCakeLP = []
+    Dfx_balances = []
+    StDfx_balances = []
+    LpFarming_balances = []
+    Users_Dfx_Amount_FromStDFX = []
+    Users_Dfx_Amount_FromCakeLP = []
     SumOfDfxOfUser = []
     print('start get add info')
     for i in JoinedDf.to_dict('records'):
         DfxBalanceUser = get_res_Int_user_Balance_Of_Token__Balance(ContractDfx, i['person'])
-        DfxBalance.append(DfxBalanceUser)
+        Dfx_balances.append(DfxBalanceUser)
 
         StDfxBalanceOfPerson = get_res_Int_user_Balance_Of_Token__Balance(ContractStDfx, i['person'])
-        StDfxBalance.append(StDfxBalanceOfPerson)
-        UserDfxAmountFromStDFX.append(StDfxBalanceOfPerson * DFX_BALANCE_OF_STDFX_ON_DFX / STDFX_TOTAL_SUPLY)
+        User_Dfx_Amount_FromStDFX = StDfxBalanceOfPerson * DFX_BALANCE_OF_STDFX_ON_DFX / STDFX_TOTAL_SUPLY
+        StDfx_balances.append(StDfxBalanceOfPerson)
+        Users_Dfx_Amount_FromStDFX.append(User_Dfx_Amount_FromStDFX)
 
         CakeLpBalanceOfPerson = get_res_Int_user_balance_farming_Dfx(ContractFarmingDfx, i['person'])
-        LpFarmingBalance.append(CakeLpBalanceOfPerson)
-        UserDfxAmountFromCakeLP.append(CakeLpBalanceOfPerson * DFX_BALANCE_OF_CAKE_LP_ON_DFX / CAKE_LP_TOTAL_SUPLY)
+        User_Dfx_Amount_FromCakeLP = CakeLpBalanceOfPerson * DFX_BALANCE_OF_CAKE_LP_ON_DFX / CAKE_LP_TOTAL_SUPLY
+        LpFarming_balances.append(CakeLpBalanceOfPerson)
+        Users_Dfx_Amount_FromCakeLP.append(User_Dfx_Amount_FromCakeLP)
 
-        SumOfDfxOfUser.append(DfxBalanceUser + StDfxBalanceOfPerson + CakeLpBalanceOfPerson)
+        SumOfDfxOfUser.append(DfxBalanceUser + User_Dfx_Amount_FromStDFX + User_Dfx_Amount_FromCakeLP)
     print('stop get add info')
-    JoinedDf['DfxBalance'] = DfxBalance
-    JoinedDf['StDfxBalance'] = StDfxBalance
-    JoinedDf['LpFarmingBalance'] = LpFarmingBalance
-    JoinedDf['UserDfxAmountFromStDFX'] = UserDfxAmountFromStDFX
-    JoinedDf['UserDfxAmountFromCakeLP'] = UserDfxAmountFromCakeLP
+    JoinedDf['DfxBalance'] = Dfx_balances
+    JoinedDf['StDfxBalance'] = StDfx_balances
+    JoinedDf['LpFarmingBalance'] = LpFarming_balances
+    JoinedDf['UserDfxAmountFromStDFX'] = Users_Dfx_Amount_FromStDFX
+    JoinedDf['UserDfxAmountFromCakeLP'] = Users_Dfx_Amount_FromCakeLP
     JoinedDf['SumOfDfxOfUser'] = SumOfDfxOfUser
     return JoinedDf.fillna(0).to_dict('records')
 
@@ -209,7 +211,14 @@ def user_Dfx_balance(address: str):
     UserDfxAmountFromCakeLP = CakeLpBalanceOfPerson * DFX_BALANCE_OF_CAKE_LP_ON_DFX / CAKE_LP_TOTAL_SUPLY
 
     SumOfDfxOfUser = DfxBalanceUser + UserDfxAmountFromStDFX + UserDfxAmountFromCakeLP
-    return SumOfDfxOfUser
+    return {
+        'DfxBalance': DfxBalanceUser,
+        'StDfxBalance': StDfxBalanceOfPerson,
+        'CakeLpBalance': CakeLpBalanceOfPerson,
+        'UserDfxAmountFromStDFX': UserDfxAmountFromStDFX,
+        'UserDfxAmountFromCakeLP': UserDfxAmountFromCakeLP,
+        'SumOfDfxOfUser': SumOfDfxOfUser
+    }
 
 
 def group_by_time(to_data, from_data):

@@ -4,7 +4,7 @@ from django.shortcuts import render
 from rest_framework.decorators import permission_classes
 from rest_framework.permissions import IsAuthenticated
 
-from . import service, utils
+from . import service
 from .models import Profile
 
 
@@ -45,6 +45,7 @@ def index_html(request):
     return render(request, 'main.html')
 
 
+@permission_classes((IsAuthenticated,))
 def profile_dfx_transactions(request, pk):
     try:
         profile = Profile.objects.get(id=pk)
@@ -53,10 +54,6 @@ def profile_dfx_transactions(request, pk):
         return JsonResponse({'err': 'profile doesnt exist'}, status=400)
 
     sold, buy = service.buy_sold_by_person_DFX_hash(profile.blockchain_address)
+    balance = service.get_user_balance(profile.blockchain_address)
 
-    return JsonResponse({'sold': sold, 'buy': buy}, safe=False)
-
-
-def test(request):
-    utils.ping_address("0x66c47804e2eb462f27c6ef1dfab50753fb8e05d3")
-    return JsonResponse({'sold': "sold", 'buy': "buy"}, safe=False)
+    return JsonResponse({'sold': sold, 'buy': buy, 'balance': balance}, safe=False)

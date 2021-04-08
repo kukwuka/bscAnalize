@@ -71,3 +71,7 @@ def stack_merge_graphs_Farming():
 
 def total_supply():
     return utils.total_supply_request()
+
+
+def get_user_balance(address:str):
+    return utils.user_Dfx_balance(address)
