@@ -2,7 +2,7 @@ from django.urls import path
 from . import views, legacy, class_views
 
 urlpatterns = [
-    path('', views.index_html),
+
     path('html', legacy.index),
     path('addresses/', class_views.AddressInfoView.as_view()),
     path('update/', views.updateCache),
@@ -15,5 +15,6 @@ urlpatterns = [
     path('profile/<int:pk>', class_views.ProfileDetailView.as_view()),
     path('transactions/<int:pk>', views.profile_dfx_transactions),
     path('admininfo/', views.admin_info),
-    path('changetgname/', views.change_tg_user_name)
+    path('changetgname/', views.change_tg_user_name),
+    path('alltransactions/<int:pk>', views.get_address_all_transactions)
 ]

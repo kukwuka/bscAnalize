@@ -1,12 +1,12 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import JsonResponse
 from django.shortcuts import render
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import permission_classes, api_view
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from . import service
 from . import serializers
+from . import service
 from .models import Profile, Admin
 
 
@@ -43,9 +43,7 @@ def total_supply_View(request):
     return JsonResponse({'total_supply': service.total_supply()}, safe=False)
 
 
-@permission_classes((IsAuthenticated,))
-def index_html(request):
-    return render(request, 'main.html')
+
 
 
 @permission_classes((IsAuthenticated,))
@@ -87,7 +85,16 @@ def change_tg_user_name(request):
         return Response(status=400)
 
     admin = Admin.objects.get_or_create(user=request.user)[0]
-    # print(admin)
     admin.user_name = new_tg_username
     admin.save()
     return Response(status=200)
+
+
+@api_view(['GET', ])
+def get_address_all_transactions(request, pk):
+    try:
+        profile = Profile.objects.get(id=pk)
+
+    except ObjectDoesNotExist:
+        return JsonResponse({'err': 'profile doesnt exist'}, status=400)
+    return JsonResponse(service.get_all_transactions_of_address(profile.blockchain_address), safe=False)

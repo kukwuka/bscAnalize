@@ -51,8 +51,10 @@ INSTALLED_APPS = [
     'django_celery_results',
     'rest_framework',
     'corsheaders',
+    'drf_yasg',
 
     'analBsc',
+    'BscFront',
 ]
 
 MIDDLEWARE = [

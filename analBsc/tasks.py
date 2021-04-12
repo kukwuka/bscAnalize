@@ -2,6 +2,7 @@ import datetime
 
 import telegram
 from django.conf import settings
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from analBsc import utils, service
 from djangoProject.celery import app
@@ -39,16 +40,20 @@ def let_update_schedule():
 
 @app.task()
 def send_message(chat_id: int, text: str, address: str):
+    keyboard = [
+        [InlineKeyboardButton('Отказаться', callback_data=f'{address}')],
+    ]
+    reply_markup: InlineKeyboardMarkup = InlineKeyboardMarkup(keyboard)
     print(f'sending message to {str(chat_id)} with test : {text}')
     bot = telegram.Bot(token=settings.TOKEN)
-    bot.send_message(chat_id, text)
+    bot.send_message(chat_id, text, reply_markup=reply_markup)
     send_notification_to_admins(text, address)
 
 
 def send_notification_to_admins(client_message: str, address: str):
     bot_admin = telegram.Bot(token=settings.TOKEN_ADMIN)
     admins_query = Admin.objects.all().exclude(external_id=0)
-    text = f"""Отправилось сообщение пользователю с адресом {address}, с текстом :
+    text = f""" \U00002712 Отправилось сообщение пользователю с адресом {address}, с текстом :
     {client_message}"""
     for admin in admins_query:
         print(text)

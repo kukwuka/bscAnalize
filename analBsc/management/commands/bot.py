@@ -1,10 +1,11 @@
+import telegram
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.management.base import BaseCommand
 from telegram import Update, ForceReply
-from telegram.ext import CallbackContext, Filters, MessageHandler, Updater, CommandHandler
+from telegram.ext import Filters, MessageHandler, Updater, CommandHandler, CallbackQueryHandler, CallbackContext
 
-from analBsc.models import Profile
+from analBsc.models import Profile, Admin
 
 
 def check_username_authorized(username: str, chat_id: int):
@@ -13,6 +14,13 @@ def check_username_authorized(username: str, chat_id: int):
         return password_used
     except ObjectDoesNotExist:
         return False
+
+
+def notification_for_admin(text: str):
+    bot_admin = telegram.Bot(token=settings.TOKEN_ADMIN)
+    admins_query = Admin.objects.all().exclude(external_id=0)
+    for admin in admins_query:
+        bot_admin.send_message(admin.external_id, text)
 
 
 def start(update: Update, _: CallbackContext) -> None:
@@ -41,9 +49,30 @@ def echo(update: Update, _: CallbackContext) -> None:
     try:
         profile_check = Profile.objects.get(password=password, disabled=True)
         profile_check.authorize(username, chat_id)
+
         update.message.reply_text(
             'Вы авторизованиы, ждите сигнала',
-            reply_markup=ForceReply(selective=True),
+        )
+
+    except ObjectDoesNotExist:
+        update.message.reply_text(
+            'Пароль неверный',
+        )
+
+
+def button(update: Update, _: CallbackContext) -> None:
+    query = update.callback_query
+
+    # CallbackQueries need to be answered, even if no notification to the user is needed
+    # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
+    query.answer()
+    try:
+        Profile.objects.get(blockchain_address=query.data, disabled=True)
+        query.edit_message_text(text=f" \U0000274c Вы отказались от продажи на сегодня, Благодарим за Ответ")
+        notification_for_admin(
+            f'\U0000274c Пользователь с адресом {query.data} отказался от сигнала, '
+            f'Проверьте егодействия по адресу https://bscscan.com/address/{query.data}'
+
         )
     except ObjectDoesNotExist:
         update.message.reply_text(
@@ -66,6 +95,7 @@ class Command(BaseCommand):
         # on different commands - answer in Telegram
         dispatcher.add_handler(CommandHandler("start", start))
         dispatcher.add_handler(CommandHandler("help", help_command))
+        updater.dispatcher.add_handler(CallbackQueryHandler(button))
 
         # on non command i.e message - echo the message on Telegram
         dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, echo))

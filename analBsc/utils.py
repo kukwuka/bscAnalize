@@ -7,10 +7,13 @@ from django.db.models import QuerySet
 from .abi import abiDfx, abiStDfx, abiFarming, abiCakeLp
 
 WEI = 10 ** 18
-ST_DFX_ADDRESS = "0x11340dc94e32310fa07cf9ae4cd8924c3cd483fe"
-DFX_ADDRESS = "0x74b3abb94e9e1ecc25bd77d6872949b4a9b2aacf"
-FARMING_DFX_ADDRESS = "0x9d943fd36add58c42568ea1459411b291ff7035f"
-CAKE_LP_ADDRESS = "0xe7ff9aceb3767b4514d403d1486b5d7f1b787989"
+ST_DFX_ADDRESS = '0x11340dc94e32310fa07cf9ae4cd8924c3cd483fe'
+DFX_ADDRESS = '0x74b3abb94e9e1ecc25bd77d6872949b4a9b2aacf'
+FARMING_DFX_ADDRESS = '0x9d943fd36add58c42568ea1459411b291ff7035f'
+CAKE_LP_ADDRESS = '0xe7ff9aceb3767b4514d403d1486b5d7f1b787989'
+ONE_INCH = '0x11111112542d85b3ef69ae05771c2dccff4faa26'
+RESERVOIR_FARMING = '0x74b3abb94e9e1ecc25bd77d6872949b4a9b2aacf'
+PANCAKE_SWAP_ROUTER = '0x05ff2b0db69458a0750badebc4f9e13add608c7f'
 
 
 def get_res_Int_user_Balance_Of_Token__Balance(contract, address: str):
@@ -24,6 +27,7 @@ def get_res_Int_user_balance_farming_Dfx(contract, address: str):
 
 
 def stampToTime(timestamp: str):
+
     tsint = int(timestamp)
     return datetime.utcfromtimestamp(tsint).strftime('%Y-%m-%d')
 
@@ -40,7 +44,7 @@ def parse_contract_transations(account_address: str, token_symbol):
         f"&address={account_address}"
         "&startblock=0"
         "&endblock=25000000"
-        "&sort=asc"
+        "&sort=desc"
         "&apikey=YourApiKeyToken")
     resJsonSwap = RespondSwap.json()["result"]
 
@@ -241,7 +245,6 @@ def group_by_time_with_hash(joined_dfx_sell, joined_dfx_bought):
         lsuffix='Sell',
         rsuffix='Buy'
     ).fillna(0)
-
     return Result.to_dict('index')
 
 
@@ -284,12 +287,54 @@ def total_supply_request():
 
 def get_yesterday_delta(table):
     yesterday_time = (datetime.now() - timedelta(1)).strftime('%Y-%m-%d')
-    yesterday_data = table[yesterday_time]
-    result = yesterday_data["valueDFXBuy"] - yesterday_data["valueDFXSell"]
-    return result
+    try:
+        yesterday_data = table[yesterday_time]
+        result = yesterday_data["valueDFXBuy"] - yesterday_data["valueDFXSell"]
+        return result
+    except KeyError:
+        yesterday_time = (datetime.now() - timedelta(2)).strftime('%Y-%m-%d')
+        yesterday_data = table[yesterday_time]
+        result = yesterday_data["valueDFXBuy"] - yesterday_data["valueDFXSell"]
+        return result
 
 
 def ping_address(address):
     w3 = Web3(Web3.HTTPProvider('https://bsc-dataseed1.binance.org:443'))
     ContractDfx = w3.eth.contract(address=Web3.toChecksumAddress(DFX_ADDRESS), abi=abiDfx())
     ContractDfx.functions.balanceOf(Web3.toChecksumAddress(address)).call()
+
+
+def get_address_all_transactions(address):
+    Respond_all_user_transaction = requests.get(
+        "https://api.bscscan.com/"
+        "api?module=account"
+        "&action=txlist"
+        f"&address={address}"
+        "&startblock=1"
+        "&endblock=99999999"
+        "&sort=desc"
+        "&apikey=YourApiKeyToken"
+    )
+    respond = Respond_all_user_transaction.json()["result"]
+    print(Respond_all_user_transaction.status_code)
+    for trans in respond:
+        info = check_transaction(trans['from'], trans['to'], trans['input'])
+        trans['info'] = info
+        trans['timeStamp'] = stampToTime(trans['timeStamp'])
+        print()
+
+    return respond
+
+
+def check_transaction(from_address: str, to_address: str, input: str):
+    try:
+        return {
+            to_address == ONE_INCH: '1Inch',
+            to_address == RESERVOIR_FARMING: 'To Reservoir',
+            to_address == PANCAKE_SWAP_ROUTER and input[:10] == "0xe8e33700": 'Change CAKE-LP from_Dfx',
+            to_address == PANCAKE_SWAP_ROUTER and input[:10] != "0xe8e33700": 'Change CAKE-LP to_Dfx',
+            to_address == FARMING_DFX_ADDRESS: 'To farming',
+
+        }[True]
+    except KeyError:
+        return ''

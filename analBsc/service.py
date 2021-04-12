@@ -1,5 +1,5 @@
-from .models import AddressInfo
 from . import utils
+from .models import AddressInfo
 
 
 def update_Db():
@@ -51,7 +51,6 @@ def buy_sold_by_person_DFX_hash(address):
 
 def yesterday_buy_sold_delta():
     table = buy_sold_graphs_DFX_hash()
-
     return utils.get_yesterday_delta(table)
 
 
@@ -73,5 +72,9 @@ def total_supply():
     return utils.total_supply_request()
 
 
-def get_user_balance(address:str):
+def get_user_balance(address: str):
     return utils.user_Dfx_balance(address)
+
+
+def get_all_transactions_of_address(address: str):
+    return utils.get_address_all_transactions(address)
