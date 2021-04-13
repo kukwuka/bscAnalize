@@ -30,6 +30,8 @@ Django, Vuejs, Redis, Postgres, Celery, telegram-bot-python/
 - Оптимазация обработки запросов на сервере
 - Возможность отправить сообщение клиенту
 
+фронт находится поадресу : https://github.com/bulbazavr1024/clientBSC/tree/main/client
+
 
 
 
