@@ -53,6 +53,8 @@ def parse_contract_transations(account_address: str, token_symbol):
 
     for transaction in resJsonSwap:
 
+        if type(transaction) != dict:
+            continue
         if (transaction["tokenSymbol"] == token_symbol) or (token_symbol == ""):
             transaction["timeStamp"] = stampToTime(transaction["timeStamp"])
             transaction["value"] = (int(transaction["value"])) / WEI
