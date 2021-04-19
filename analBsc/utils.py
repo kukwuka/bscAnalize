@@ -15,6 +15,7 @@ CAKE_LP_ADDRESS = '0xe7ff9aceb3767b4514d403d1486b5d7f1b787989'
 ONE_INCH = '0x11111112542d85b3ef69ae05771c2dccff4faa26'
 RESERVOIR_FARMING = '0x74b3abb94e9e1ecc25bd77d6872949b4a9b2aacf'
 PANCAKE_SWAP_ROUTER = '0x05ff2b0db69458a0750badebc4f9e13add608c7f'
+BSC_SCAN_API_KEY= 'X7UE235AN5BWK43SPCUPG2DZAQPZ9BPG46'
 
 
 def get_res_Int_user_Balance_Of_Token__Balance(contract, address: str):
@@ -45,7 +46,7 @@ def parse_contract_transations(account_address: str, token_symbol):
         "&startblock=0"
         "&endblock=25000000"
         "&sort=desc"
-        "&apikey=YourApiKeyToken")
+        f"&apikey={BSC_SCAN_API_KEY}")
     resJsonSwap = RespondSwap.json()["result"]
 
     ToUs = []
@@ -283,7 +284,7 @@ def total_supply_request():
         "https://api.bscscan.com/api?"
         "module=stats&action=tokensupply"
         "&contractaddress=0x74b3abb94e9e1ecc25bd77d6872949b4a9b2aacf"
-        "&apikey=X7UE235AN5BWK43SPCUPG2DZAQPZ9BPG46"
+        f"&apikey={BSC_SCAN_API_KEY}"
     )
     return RespondSwap.json()["result"]
 
@@ -316,7 +317,7 @@ def get_address_all_transactions(address):
         "&startblock=1"
         "&endblock=99999999"
         "&sort=desc"
-        "&apikey=YourApiKeyToken"
+        f"&apikey={BSC_SCAN_API_KEY}"
     )
     respond = Respond_all_user_transaction.json()["result"]
     print(Respond_all_user_transaction.status_code)
