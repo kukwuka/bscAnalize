@@ -75,9 +75,8 @@ def button(update: Update, _: CallbackContext) -> None:
 
         )
     except ObjectDoesNotExist:
-        update.message.reply_text(
+        query.edit_message_text(
             'Пароль неверный',
-            reply_markup=ForceReply(selective=True),
         )
 
 

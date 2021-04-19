@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
+
 import pandas as pd
 import requests
-from web3 import Web3
 from django.db.models import QuerySet
+from web3 import Web3
 
 from .abi import abiDfx, abiStDfx, abiFarming, abiCakeLp
 
@@ -27,7 +28,6 @@ def get_res_Int_user_balance_farming_Dfx(contract, address: str):
 
 
 def stampToTime(timestamp: str):
-
     tsint = int(timestamp)
     return datetime.utcfromtimestamp(tsint).strftime('%Y-%m-%d')
 
@@ -70,6 +70,7 @@ def parse_contract_transations(account_address: str, token_symbol):
                     "person": transaction["to"],
                     "hash": transaction["hash"]
                 })
+
     return ToUs, FromUs
 
 
